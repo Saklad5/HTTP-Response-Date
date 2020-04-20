@@ -1,5 +1,8 @@
 import XCTest
 
+import HTTPResponseDateTests
+
 var tests = [XCTestCaseEntry]()
-tests += HTTPResponseDateTests.allTests()
+tests += HTTPResponseDateTests.__allTests()
+
 XCTMain(tests)
