@@ -2,6 +2,10 @@ import Foundation
 import HTTPResponseDate
 import XCTest
 
+#if canImport(FoundationNetworking)
+import class FoundationNetworking.HTTPURLResponse
+#endif
+
 final class HTTPResponseDateTests: XCTestCase {
 	/// A set of dates along with an `HTTPURLResponse` for each supported `date` header representation of them.
 	///
@@ -153,7 +157,20 @@ final class HTTPResponseDateTests: XCTestCase {
 	}
 
 	func testMalformedTimestampParsing() {
+		#if canImport(FoundationNetworking) // HTTPURLResponse.init isn't present in FoundationNetworking
+		XCTAssertNil(
+			HTTPURLResponse(
+				url: URL(string: "example.com")!,
+				statusCode: 0,
+				httpVersion: nil,
+				headerFields: nil
+				)!
+				.date
+		)
+		#else
 		XCTAssertNil(HTTPURLResponse().date)
+		#endif
+
 		XCTAssertNil(
 			HTTPURLResponse(
 				url: URL(string: "example.com")!,
