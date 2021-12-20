@@ -30,26 +30,41 @@ extension HTTPURLResponse {
     }
   }
 
+  // Necessary for Sendable conformance without breaking compatibility
+  #if swift(>=5.5) && canImport(_Concurrency)
+  /// Returns a date corresponding to the given HTTP date string.
+  /// - Parameter value: An HTTP-date as defined by
+  /// [RFC 2616](https://tools.ietf.org/html/rfc2616#section-3.3.1).
+  /// - Returns: A date parsed from the provided value, or `nil` if it is not a valid HTTP-date.
+  @Sendable
+  public static func date(forDateValue value: String) -> Date? {
+    HTTPDate.allCases.lazy.compactMap { $0.formatter.date(from: value) }.first
+  }
+  #else
+  /// Returns a date corresponding to the given HTTP date string.
+  /// - Parameter value: An HTTP-date as defined by
+  /// [RFC 2616](https://tools.ietf.org/html/rfc2616#section-3.3.1).
+  /// - Returns: A date parsed from the provided value, or `nil` if it is not a valid HTTP-date.
+  public static func date(forDateValue value: String) -> Date? {
+    HTTPDate.allCases.lazy.compactMap { $0.formatter.date(from: value) }.first
+  }
+  #endif
+
 	/// The date that the response was sent.
 	/// - Note: This is parsed from the `date` header of the response according to [RFC 2616](https://tools.ietf.org/html/rfc2616#section-3.3.1).
-	public var date: Date? {
-		// Servers are required to send a date header whenever possible. It isn't always possible.
-		let dateValue: String?
-
-		#if canImport(FoundationNetworking) && swift(<5.3) // See https://bugs.swift.org/browse/SR-12300
-		dateValue = allHeaderFields["date"] as? String
-		#else
-		if #available(iOS 13, macCatalyst 13, OSX 10.15, tvOS 13, watchOS 6, *) {
-			dateValue = value(forHTTPHeaderField: "date")
-		} else {
-			dateValue = allHeaderFields["Date"] as? String
-		}
-		#endif
-
-		guard let dateString = dateValue else {
-			return nil
-		}
-
-    return HTTPDate.allCases.lazy.compactMap { $0.formatter.date(from: dateString) }.first
+  public var date: Date? {
+    // Extract header value
+    { () -> String? in
+      #if canImport(FoundationNetworking) && swift(<5.3) // See https://bugs.swift.org/browse/SR-12300
+      return allHeaderFields["date"] as? String
+      #else
+      if #available(iOS 13, macCatalyst 13, OSX 10.15, tvOS 13, watchOS 6, *) {
+        return value(forHTTPHeaderField: "Date")
+      } else {
+        return allHeaderFields["Date"] as? String
+      }
+      #endif
+    }()
+    .flatMap(Self.date(forDateValue:))
 	}
 }
