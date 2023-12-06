@@ -67,4 +67,22 @@ extension HTTPURLResponse {
     }()
     .flatMap(Self.date(forDateValue:))
 	}
+
+  public var lastModifued: Date? {
+    // Extract header value
+    { () -> String? in
+      #if canImport(FoundationNetworking) && swift(<5.3) // See https://bugs.swift.org/browse/SR-12300
+      return allHeaderFields["last-modified"] as? String
+      #else
+      if #available(iOS 13, macCatalyst 13, OSX 10.15, tvOS 13, watchOS 6, *) {
+        return value(forHTTPHeaderField: "Last-Modified")
+      } else {
+        return allHeaderFields["Last-Modified"] as? String
+      }
+      #endif
+    }()
+    .flatMap(Self.date(forDateValue:))
+	}
+
+	
 }
